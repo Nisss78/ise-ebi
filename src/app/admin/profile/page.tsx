@@ -1,102 +1,79 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@/convex/_generated/api";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExternalLink, Eye, EyeOff, Copy, Check } from "lucide-react";
 
-const themeOptions = [
-  { value: "default", label: "デフォルト" },
-  { value: "ocean", label: "オーシャン" },
-  { value: "sunset", label: "サンセット" },
-  { value: "sakura", label: "さくら" },
-  { value: "dark", label: "ダーク" },
-];
-
-export default function ProfilePage() {
-  const { user: clerkUser } = useUser();
+export default function AdminProfilePage() {
+  const { user: clerkUser, isLoaded } = useUser();
   const convexUser = useQuery(
     api.users.getByClerkId,
     clerkUser?.id ? { clerkId: clerkUser.id } : "skip"
   );
   const updateProfile = useMutation(api.users.updateProfile);
 
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
-
+  const [showPreview, setShowPreview] = useState(true);
+  const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     bio: "",
-    avatarUrl: "",
-    themeColor: "#6366f1",
-    themeName: "default",
     twitterUrl: "",
     instagramUrl: "",
     youtubeUrl: "",
     tiktokUrl: "",
     websiteUrl: "",
   });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (convexUser) {
       setFormData({
-        name: convexUser.name ?? "",
-        bio: convexUser.bio ?? "",
-        avatarUrl: convexUser.avatarUrl ?? "",
-        themeColor: convexUser.themeColor,
-        themeName: convexUser.themeName,
-        twitterUrl: convexUser.twitterUrl ?? "",
-        instagramUrl: convexUser.instagramUrl ?? "",
-        youtubeUrl: convexUser.youtubeUrl ?? "",
-        tiktokUrl: convexUser.tiktokUrl ?? "",
-        websiteUrl: convexUser.websiteUrl ?? "",
+        name: convexUser.name || "",
+        bio: convexUser.bio || "",
+        twitterUrl: convexUser.twitterUrl || "",
+        instagramUrl: convexUser.instagramUrl || "",
+        youtubeUrl: convexUser.youtubeUrl || "",
+        tiktokUrl: convexUser.tiktokUrl || "",
+        websiteUrl: convexUser.websiteUrl || "",
       });
     }
   }, [convexUser]);
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const handleSave = async () => {
     if (!clerkUser?.id) return;
     setSaving(true);
-    setMessage(null);
-
     try {
       await updateProfile({
         clerkId: clerkUser.id,
-        name: formData.name || undefined,
-        bio: formData.bio || undefined,
-        avatarUrl: formData.avatarUrl || undefined,
-        themeColor: formData.themeColor || undefined,
-        themeName: formData.themeName || undefined,
-        twitterUrl: formData.twitterUrl || undefined,
-        instagramUrl: formData.instagramUrl || undefined,
-        youtubeUrl: formData.youtubeUrl || undefined,
-        tiktokUrl: formData.tiktokUrl || undefined,
-        websiteUrl: formData.websiteUrl || undefined,
+        ...formData,
       });
-      setMessage({ type: "success", text: "プロフィールを保存しました" });
-    } catch (err) {
-      console.error(err);
-      setMessage({ type: "error", text: "保存に失敗しました" });
+    } catch (error) {
+      console.error(error);
     } finally {
       setSaving(false);
     }
-  }
+  };
 
-  if (!convexUser) {
+  const storeUrl = convexUser
+    ? `${window.location.origin}/${convexUser.username}`
+    : "";
+
+  const copyUrl = async () => {
+    if (storeUrl) {
+      await navigator.clipboard.writeText(storeUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  if (!isLoaded || !convexUser) {
     return (
       <div className="flex items-center justify-center py-24">
         <span className="text-sm text-muted-foreground">読み込み中...</span>
@@ -105,184 +82,170 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">プロフィール編集</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          @{convexUser.username}
-        </p>
-      </div>
-
-      {message && (
-        <div
-          className={`rounded-lg px-4 py-3 text-sm ${
-            message.type === "success"
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-red-50 text-red-700"
-          }`}
-        >
-          {message.text}
+    <div className="flex gap-6">
+      {/* Editor */}
+      <div className="flex-1 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">プロフィール</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              ストアフロントの表示をカスタマイズ
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPreview(!showPreview)}
+            className="lg:hidden"
+          >
+            {showPreview ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            {showPreview ? "プレビュー非表示" : "プレビュー"}
+          </Button>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic info */}
-        <section className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold">基本情報</h2>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">名前</Label>
+        {/* Store URL Card */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">ストアURL</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input value={storeUrl} readOnly className="text-sm" />
+              <Button size="sm" variant="outline" onClick={copyUrl}>
+                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                asChild
+              >
+                <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="size-4" />
+                </a>
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              このURLをSNSのバイオに貼って共有しましょう
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Profile Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">基本情報</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">表示名</Label>
               <Input
                 id="name"
-                name="name"
                 value={formData.name}
-                onChange={handleChange}
-                placeholder="表示名を入力"
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="あなたの名前"
               />
             </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="bio">自己紹介</Label>
+            <div className="space-y-2">
+              <Label htmlFor="bio">バイオ</Label>
               <Textarea
                 id="bio"
-                name="bio"
                 value={formData.bio}
-                onChange={handleChange}
-                placeholder="自己紹介を入力"
-                rows={4}
+                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                placeholder="自己紹介を入力..."
+                rows={3}
               />
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="avatarUrl">アバターURL</Label>
+        {/* SNS Links */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">SNSリンク</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="twitter">X (Twitter)</Label>
               <Input
-                id="avatarUrl"
-                name="avatarUrl"
-                type="url"
-                value={formData.avatarUrl}
-                onChange={handleChange}
-                placeholder="https://example.com/avatar.jpg"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Theme */}
-        <section className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold">テーマ</h2>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="themeColor">テーマカラー</Label>
-              <div className="flex items-center gap-3">
-                <input
-                  id="themeColor"
-                  name="themeColor"
-                  type="color"
-                  value={formData.themeColor}
-                  onChange={handleChange}
-                  className="h-8 w-12 cursor-pointer rounded border border-input bg-transparent p-0.5"
-                />
-                <Input
-                  name="themeColor"
-                  value={formData.themeColor}
-                  onChange={handleChange}
-                  placeholder="#6366f1"
-                  className="w-32 font-mono text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>テーマ</Label>
-              <select
-                value={formData.themeName}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, themeName: e.target.value }))
-                }
-                className="flex h-9 w-48 rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {themeOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </section>
-
-        {/* Social links */}
-        <section className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold">SNSリンク</h2>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="twitterUrl">Twitter / X</Label>
-              <Input
-                id="twitterUrl"
-                name="twitterUrl"
-                type="url"
+                id="twitter"
                 value={formData.twitterUrl}
-                onChange={handleChange}
+                onChange={(e) => setFormData({ ...formData, twitterUrl: e.target.value })}
                 placeholder="https://twitter.com/username"
               />
             </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="instagramUrl">Instagram</Label>
+            <div className="space-y-2">
+              <Label htmlFor="instagram">Instagram</Label>
               <Input
-                id="instagramUrl"
-                name="instagramUrl"
-                type="url"
+                id="instagram"
                 value={formData.instagramUrl}
-                onChange={handleChange}
+                onChange={(e) => setFormData({ ...formData, instagramUrl: e.target.value })}
                 placeholder="https://instagram.com/username"
               />
             </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="youtubeUrl">YouTube</Label>
+            <div className="space-y-2">
+              <Label htmlFor="youtube">YouTube</Label>
               <Input
-                id="youtubeUrl"
-                name="youtubeUrl"
-                type="url"
+                id="youtube"
                 value={formData.youtubeUrl}
-                onChange={handleChange}
-                placeholder="https://youtube.com/@channel"
+                onChange={(e) => setFormData({ ...formData, youtubeUrl: e.target.value })}
+                placeholder="https://youtube.com/@username"
               />
             </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="tiktokUrl">TikTok</Label>
+            <div className="space-y-2">
+              <Label htmlFor="tiktok">TikTok</Label>
               <Input
-                id="tiktokUrl"
-                name="tiktokUrl"
-                type="url"
+                id="tiktok"
                 value={formData.tiktokUrl}
-                onChange={handleChange}
+                onChange={(e) => setFormData({ ...formData, tiktokUrl: e.target.value })}
                 placeholder="https://tiktok.com/@username"
               />
             </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="websiteUrl">ウェブサイト</Label>
+            <div className="space-y-2">
+              <Label htmlFor="website">ウェブサイト</Label>
               <Input
-                id="websiteUrl"
-                name="websiteUrl"
-                type="url"
+                id="website"
                 value={formData.websiteUrl}
-                onChange={handleChange}
-                placeholder="https://yourwebsite.com"
+                onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                placeholder="https://your-website.com"
               />
             </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={saving} size="lg">
-            {saving ? "保存中..." : "保存する"}
-          </Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "保存中..." : "保存する"}
+        </Button>
+      </div>
+
+      {/* Preview (Desktop) */}
+      {showPreview && (
+        <div className="hidden lg:block w-96 shrink-0">
+          <div className="sticky top-6">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">
+                プレビュー
+              </span>
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                新しいタブで開く
+              </a>
+            </div>
+            <div className="overflow-hidden rounded-xl border bg-white shadow-lg">
+              <div className="h-[600px] overflow-y-auto">
+                <iframe
+                  src={storeUrl}
+                  className="w-full h-full border-0"
+                  title="プレビュー"
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </form>
+      )}
     </div>
   );
 }
