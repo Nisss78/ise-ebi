@@ -3,13 +3,13 @@
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExternalLink, Eye, EyeOff, Copy, Check } from "lucide-react";
+import { ExternalLink, Eye, EyeOff, Copy, Check, Camera, X } from "lucide-react";
 
 export default function AdminProfilePage() {
   const { user: clerkUser, isLoaded } = useUser();
@@ -26,6 +26,7 @@ export default function AdminProfilePage() {
   const [formData, setFormData] = useState({
     name: "",
     bio: "",
+    avatarUrl: "",
     twitterUrl: "",
     instagramUrl: "",
     youtubeUrl: "",
@@ -33,12 +34,14 @@ export default function AdminProfilePage() {
     websiteUrl: "",
   });
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (convexUser) {
       setFormData({
         name: convexUser.name || "",
         bio: convexUser.bio || "",
+        avatarUrl: convexUser.avatarUrl || "",
         twitterUrl: convexUser.twitterUrl || "",
         instagramUrl: convexUser.instagramUrl || "",
         youtubeUrl: convexUser.youtubeUrl || "",
@@ -47,6 +50,59 @@ export default function AdminProfilePage() {
       });
     }
   }, [convexUser]);
+
+  // 画像をリサイズしてBase64に変換
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // ファイルサイズチェック（5MB以下）
+    if (file.size > 5 * 1024 * 1024) {
+      alert("画像は5MB以下にしてください");
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = document.createElement("img");
+        img.onload = () => {
+          // Canvasでリサイズ
+          const canvas = document.createElement("canvas");
+          const maxSize = 400; // 400x400pxにリサイズ
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxSize) {
+              height *= maxSize / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width *= maxSize / height;
+              height = maxSize;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // JPEG品質80%で圧縮
+          const base64 = canvas.toDataURL("image/jpeg", 0.8);
+          setFormData({ ...formData, avatarUrl: base64 });
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("画像のアップロードに失敗しました", error);
+      alert("画像のアップロードに失敗しました");
+    }
+  };
 
   const handleSave = async () => {
     if (!clerkUser?.id) return;
@@ -140,6 +196,59 @@ export default function AdminProfilePage() {
             <CardTitle className="text-base">基本情報</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Avatar Upload */}
+            <div className="space-y-2">
+              <Label>アイコン画像</Label>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  {formData.avatarUrl ? (
+                    <div className="relative h-20 w-20 overflow-hidden rounded-full">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={formData.avatarUrl}
+                        alt="Avatar preview"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, avatarUrl: "" })}
+                        className="absolute -right-1 -top-1 rounded-full bg-destructive p-1 text-white hover:bg-destructive/90"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/30 hover:border-primary hover:bg-muted/50 transition-colors"
+                    >
+                      <Camera className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    画像をアップロード
+                  </Button>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    JPG、PNG対応（最大5MB、自動的に400x400pxにリサイズ）
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="name">表示名</Label>
               <Input
