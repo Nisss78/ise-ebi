@@ -4,12 +4,24 @@ import { api } from "./_generated/api";
 
 const http = httpRouter();
 
+type ClerkWebhookBody = {
+  type: string;
+  data: {
+    id: string;
+    username?: string;
+    email_addresses?: Array<{ email_address: string }>;
+    first_name?: string;
+    last_name?: string;
+    image_url?: string;
+  };
+};
+
 // Clerk webhook for user sync
 http.route({
   path: "/clerk-webhook",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const body = await request.json();
+    const body: ClerkWebhookBody = await request.json();
     const eventType = body.type;
 
     if (eventType === "user.created" || eventType === "user.updated") {
