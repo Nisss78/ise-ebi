@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
-import { api } from "../../../../convex/_generated/api";
-import { Id } from "../../../../convex/_generated/dataModel";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,9 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Eye,
+  EyeOff,
+  RefreshCw,
 } from "lucide-react";
 
 interface LinkItem {
@@ -71,8 +74,13 @@ export default function LinksPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<Id<"links"> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(true);
+  const [previewKey, setPreviewKey] = useState(0);
 
   const loading = !convexUser || links === undefined;
+  const storeUrl = convexUser
+    ? `${window.location.origin}/${convexUser.username}`
+    : "";
 
   function openAddDialog() {
     setEditingLink(null);
@@ -184,174 +192,228 @@ export default function LinksPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">リンク管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            上下ボタンで表示順を変更できます
-          </p>
+    <div className="flex gap-6">
+      {/* Editor */}
+      <div className="flex-1 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">リンク管理</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              上下ボタンで表示順を変更できます
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPreview(!showPreview)}
+              className="lg:hidden"
+            >
+              {showPreview ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              {showPreview ? "非表示" : "プレビュー"}
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger render={<Button onClick={openAddDialog} size="sm" />}>
+                <Plus className="size-4" />
+                リンクを追加
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{editingLink ? "リンクを編集" : "リンクを追加"}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="link-title">タイトル</Label>
+                    <Input
+                      id="link-title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleFormChange}
+                      placeholder="例：公式サイト"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="link-url">URL</Label>
+                    <Input
+                      id="link-url"
+                      name="url"
+                      type="url"
+                      value={formData.url}
+                      onChange={handleFormChange}
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="link-icon">アイコン (任意)</Label>
+                    <Input
+                      id="link-icon"
+                      name="icon"
+                      value={formData.icon}
+                      onChange={handleFormChange}
+                      placeholder="例：🔗"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="link-active"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, isActive: checked }))
+                      }
+                    />
+                    <Label htmlFor="link-active">有効にする</Label>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving || !formData.title.trim() || !formData.url.trim()}
+                  >
+                    {saving ? "保存中..." : "保存"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger render={<Button onClick={openAddDialog} />}>
-            <Plus className="size-4" />
-            リンクを追加
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingLink ? "リンクを編集" : "リンクを追加"}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="link-title">タイトル</Label>
-                <Input
-                  id="link-title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleFormChange}
-                  placeholder="例：公式サイト"
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="link-url">URL</Label>
-                <Input
-                  id="link-url"
-                  name="url"
-                  type="url"
-                  value={formData.url}
-                  onChange={handleFormChange}
-                  placeholder="https://example.com"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="link-icon">アイコン (任意)</Label>
-                <Input
-                  id="link-icon"
-                  name="icon"
-                  value={formData.icon}
-                  onChange={handleFormChange}
-                  placeholder="例：🔗"
-                />
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="link-active"
-                  checked={formData.isActive}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, isActive: checked }))
-                  }
-                />
-                <Label htmlFor="link-active">有効にする</Label>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={handleSave}
-                disabled={saving || !formData.title.trim() || !formData.url.trim()}
+
+        {error && (
+          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+            <button
+              onClick={() => setError(null)}
+              className="ml-2 underline hover:no-underline"
+            >
+              閉じる
+            </button>
+          </div>
+        )}
+
+        {links.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed bg-muted/30 py-16 text-center">
+            <p className="text-sm text-muted-foreground">リンクがまだありません</p>
+            <Button variant="outline" className="mt-4" onClick={openAddDialog}>
+              <Plus className="size-4" />
+              最初のリンクを追加
+            </Button>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {links.map((link, index) => (
+              <li
+                key={link._id}
+                className={`flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm ${
+                  link.isActive ? "" : "opacity-60"
+                }`}
               >
-                {saving ? "保存中..." : "保存"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => void moveLink(index, "up")}
+                    disabled={index === 0}
+                    aria-label="上へ移動"
+                  >
+                    <ArrowUp className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => void moveLink(index, "down")}
+                    disabled={index === links.length - 1}
+                    aria-label="下へ移動"
+                  >
+                    <ArrowDown className="size-4" />
+                  </Button>
+                </div>
+
+                {link.icon && <span className="text-lg leading-none">{link.icon}</span>}
+
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{link.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">{link.url}</p>
+                </div>
+
+                <Switch
+                  checked={link.isActive}
+                  onCheckedChange={() => void handleToggleActive(link)}
+                  aria-label="有効/無効"
+                />
+
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label="リンクを開く"
+                >
+                  <ExternalLink className="size-4" />
+                </a>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => openEditDialog(link)}
+                  aria-label="編集"
+                >
+                  <Pencil className="size-4" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => void handleDelete(link._id)}
+                  disabled={deletingId === link._id}
+                  className="text-destructive hover:text-destructive"
+                  aria-label="削除"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-          <button
-            onClick={() => setError(null)}
-            className="ml-2 underline hover:no-underline"
-          >
-            閉じる
-          </button>
-        </div>
-      )}
-
-      {links.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed bg-muted/30 py-16 text-center">
-          <p className="text-sm text-muted-foreground">リンクがまだありません</p>
-          <Button variant="outline" className="mt-4" onClick={openAddDialog}>
-            <Plus className="size-4" />
-            最初のリンクを追加
-          </Button>
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {links.map((link, index) => (
-            <li
-              key={link._id}
-              className={`flex items-center gap-3 rounded-xl border bg-card px-4 py-3 shadow-sm ${
-                link.isActive ? "" : "opacity-60"
-              }`}
-            >
-              <div className="flex flex-col gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => void moveLink(index, "up")}
-                  disabled={index === 0}
-                  aria-label="上へ移動"
+      {/* Preview (Desktop) */}
+      {showPreview && (
+        <div className="hidden lg:block w-96 shrink-0">
+          <div className="sticky top-6">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">
+                プレビュー
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPreviewKey((k) => k + 1)}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
                 >
-                  <ArrowUp className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => void moveLink(index, "down")}
-                  disabled={index === links.length - 1}
-                  aria-label="下へ移動"
+                  <RefreshCw className="size-3" />
+                  更新
+                </button>
+                <a
+                  href={storeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline"
                 >
-                  <ArrowDown className="size-4" />
-                </Button>
+                  新しいタブで開く
+                </a>
               </div>
-
-              {link.icon && <span className="text-lg leading-none">{link.icon}</span>}
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{link.title}</p>
-                <p className="truncate text-xs text-muted-foreground">{link.url}</p>
+            </div>
+            <div className="overflow-hidden rounded-xl border bg-white shadow-lg">
+              <div className="h-[600px] overflow-y-auto">
+                <iframe
+                  key={previewKey}
+                  src={storeUrl}
+                  className="w-full h-full border-0"
+                  title="プレビュー"
+                />
               </div>
-
-              <Switch
-                checked={link.isActive}
-                onCheckedChange={() => void handleToggleActive(link)}
-                aria-label="有効/無効"
-              />
-
-              <a
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="リンクを開く"
-              >
-                <ExternalLink className="size-4" />
-              </a>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => openEditDialog(link)}
-                aria-label="編集"
-              >
-                <Pencil className="size-4" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => void handleDelete(link._id)}
-                disabled={deletingId === link._id}
-                className="text-destructive hover:text-destructive"
-                aria-label="削除"
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </li>
-          ))}
-        </ul>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

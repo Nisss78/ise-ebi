@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
-import { api } from "../../../../convex/_generated/api";
-import { Id } from "../../../../convex/_generated/dataModel";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,9 @@ import {
   Trash2Icon,
   ShoppingBagIcon,
   Loader2,
+  Eye,
+  EyeOff,
+  RefreshCw,
 } from "lucide-react";
 
 interface Product {
@@ -325,11 +328,20 @@ export default function AdminProductsPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [showPreview, setShowPreview] = useState(true);
+  const [previewKey, setPreviewKey] = useState(0);
+  const [saved, setSaved] = useState(false);
+
+  const storeUrl = convexUser
+    ? `${window.location.origin}/${convexUser.username}`
+    : "";
 
   const loading = !convexUser || products === undefined;
 
   const handleSaved = useCallback(() => {
-    // Convex auto-refreshes queries
+    setSaved(true);
+    setPreviewKey((k) => k + 1);
+    setTimeout(() => setSaved(false), 3000);
   }, []);
 
   if (loading) {
@@ -341,23 +353,38 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">商品管理</h1>
-          <p className="text-sm text-muted-foreground">
-            デジタル商品の追加・編集・削除ができます
-          </p>
+    <div className="flex gap-6">
+      {/* Product List */}
+      <div className="flex-1 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">商品</h1>
+            <p className="text-sm text-muted-foreground">
+              デジタル商品の追加・編集・削除
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPreview(!showPreview)}
+              className="lg:hidden"
+            >
+              {showPreview ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              {showPreview ? "プレビュー非表示" : "プレビュー"}
+            </Button>
+            <Button size="sm" onClick={() => setAddDialogOpen(true)} className="gap-2">
+              <PlusIcon className="size-4" />
+              追加
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={() => setAddDialogOpen(true)}
-          className="gap-2"
-        >
-          <PlusIcon className="size-4" />
-          商品を追加
-        </Button>
-      </div>
+
+        {saved && (
+          <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+            ✓ 保存しました
+          </div>
+        )}
 
       {/* Empty state */}
       {products.length === 0 && (
@@ -490,5 +517,46 @@ export default function AdminProductsPage() {
         />
       )}
     </div>
+
+    {/* Preview (Desktop) */}
+    {showPreview && (
+      <div className="hidden lg:block w-96 shrink-0">
+        <div className="sticky top-6">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">
+              プレビュー
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPreviewKey((k) => k + 1)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className="inline size-3 mr-1" />
+                更新
+              </button>
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                新しいタブで開く
+              </a>
+            </div>
+          </div>
+          <div className="overflow-hidden rounded-xl border bg-white shadow-lg">
+            <div className="h-[600px] overflow-y-auto">
+              <iframe
+                key={previewKey}
+                src={storeUrl}
+                className="w-full h-full border-0"
+                title="プレビュー"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
   );
 }

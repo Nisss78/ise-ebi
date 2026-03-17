@@ -90,10 +90,50 @@ export default function OnboardingPage() {
     }
   };
 
-  if (!isLoaded || !clerkUser) {
+  if (!isLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="mt-4 text-sm text-muted-foreground">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!clerkUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>ログインが必要です</CardTitle>
+            <CardDescription>
+              このページにアクセスするにはログインしてください
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              className="w-full"
+              onClick={() => router.push("/login")}
+            >
+              ログインページへ
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!convexUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="mt-4 text-sm text-muted-foreground">アカウントを準備中...</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            自動的にリダイレクトされます
+          </p>
+        </div>
       </div>
     );
   }
