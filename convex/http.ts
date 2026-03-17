@@ -21,7 +21,7 @@ http.route({
   path: "/clerk-webhook",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const body: ClerkWebhookBody = await request.json();
+    const body = (await request.json()) as ClerkWebhookBody;
     const eventType = body.type;
 
     if (eventType === "user.created" || eventType === "user.updated") {

@@ -108,6 +108,7 @@ export const updateProfile = mutation({
     avatarUrl: v.optional(v.string()),
     themeColor: v.optional(v.string()),
     themeName: v.optional(v.string()),
+    productLayout: v.optional(v.string()),
     twitterUrl: v.optional(v.string()),
     instagramUrl: v.optional(v.string()),
     youtubeUrl: v.optional(v.string()),

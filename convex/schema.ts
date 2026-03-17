@@ -11,6 +11,7 @@ export default defineSchema({
     avatarUrl: v.optional(v.string()),
     themeColor: v.string(),
     themeName: v.string(),
+    productLayout: v.optional(v.string()),
     twitterUrl: v.optional(v.string()),
     instagramUrl: v.optional(v.string()),
     youtubeUrl: v.optional(v.string()),
