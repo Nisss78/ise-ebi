@@ -24,6 +24,7 @@ export default function AdminProfilePage() {
   const [previewKey, setPreviewKey] = useState(0);
   const [saved, setSaved] = useState(false);
   const [formData, setFormData] = useState({
+    username: "",
     name: "",
     bio: "",
     avatarUrl: "",
@@ -39,6 +40,7 @@ export default function AdminProfilePage() {
   useEffect(() => {
     if (convexUser) {
       setFormData({
+        username: convexUser.username || "",
         name: convexUser.name || "",
         bio: convexUser.bio || "",
         avatarUrl: convexUser.avatarUrl || "",
@@ -124,7 +126,7 @@ export default function AdminProfilePage() {
   };
 
   const storeUrl = convexUser
-    ? `${window.location.origin}/${convexUser.username}`
+    ? `${window.location.origin}/${formData.username || convexUser.username}`
     : "";
 
   const copyUrl = async () => {
@@ -247,6 +249,23 @@ export default function AdminProfilePage() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username">ユーザー名（@xxx）</Label>
+              <div className="flex items-center">
+                <span className="mr-2 text-muted-foreground">@</span>
+                <Input
+                  id="username"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                  placeholder="username"
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                英数字とアンダースコアのみ使用可能。ストアURLが変更されます。
+              </p>
             </div>
 
             <div className="space-y-2">
