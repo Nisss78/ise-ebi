@@ -11,6 +11,48 @@ export const getByClerkId = query({
   },
 });
 
+export const getOrCreateByClerkId = mutation({
+  args: {
+    clerkId: v.string(),
+    email: v.string(),
+    name: v.optional(v.string()),
+    avatarUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+
+    if (existing) {
+      return existing;
+    }
+
+    // Auto-generate username from email
+    const baseUsername = args.email.split("@")[0]?.replace(/[^a-z0-9_]/g, "_").slice(0, 20) || `user_${Date.now()}`;
+    
+    // Check if username exists
+    let username = baseUsername;
+    let counter = 1;
+    while (await ctx.db.query("users").withIndex("by_username", q => q.eq("username", username)).unique()) {
+      username = `${baseUsername}_${counter}`;
+      counter++;
+    }
+
+    const id = await ctx.db.insert("users", {
+      clerkId: args.clerkId,
+      username,
+      email: args.email,
+      name: args.name,
+      avatarUrl: args.avatarUrl,
+      themeColor: "#6366f1",
+      themeName: "default",
+    });
+
+    return await ctx.db.get(id);
+  },
+});
+
 export const getByUsername = query({
   args: { username: v.string() },
   handler: async (ctx, args) => {

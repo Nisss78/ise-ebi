@@ -1,12 +1,28 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "../../../convex/_generated/api";
 import { Link as LinkIcon, ShoppingBag, ShoppingCart } from "lucide-react";
+import { useEffect } from "react";
 
 export default function AdminDashboardPage() {
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser, isLoaded } = useUser();
+  
+  // Auto-create user if not exists
+  const getOrCreateUser = useMutation(api.users.getOrCreateByClerkId);
+  
+  useEffect(() => {
+    if (isLoaded && clerkUser?.id && clerkUser?.emailAddresses?.[0]?.emailAddress) {
+      getOrCreateUser({
+        clerkId: clerkUser.id,
+        email: clerkUser.emailAddresses[0].emailAddress,
+        name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || undefined,
+        avatarUrl: clerkUser.imageUrl || undefined,
+      }).catch(console.error);
+    }
+  }, [isLoaded, clerkUser, getOrCreateUser]);
+
   const convexUser = useQuery(
     api.users.getByClerkId,
     clerkUser?.id ? { clerkId: clerkUser.id } : "skip"
