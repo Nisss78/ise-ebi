@@ -67,7 +67,7 @@ export default async function AdminLayout({
       <aside className="hidden w-56 shrink-0 border-r lg:flex lg:flex-col">
         <div className="flex h-14 items-center border-b px-4">
           <span className="text-base font-semibold tracking-tight">
-            Stan Store
+            イセエビ
           </span>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -91,12 +91,12 @@ export default async function AdminLayout({
             </SheetTrigger>
             <SheetContent side="left" className="w-56 p-0">
               <SheetHeader className="border-b px-4 py-3.5">
-                <SheetTitle className="text-base">Stan Store</SheetTitle>
+                <SheetTitle className="text-base">イセエビ</SheetTitle>
               </SheetHeader>
               <SidebarNav />
             </SheetContent>
           </Sheet>
-          <span className="text-base font-semibold">Stan Store</span>
+          <span className="text-base font-semibold">イセエビ</span>
         </header>
 
         {/* Page content */}

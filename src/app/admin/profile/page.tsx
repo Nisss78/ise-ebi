@@ -12,7 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { ExternalLink, Eye, EyeOff, Copy, Check, Camera, X, Save, Palette } from "lucide-react";
 import { toast } from "sonner";
+import { IMAGE_MAX_SIZE_BYTES, IMAGE_RESIZE, IMAGE_QUALITY } from "@/lib/constants";
 import { getThemesByCategory } from "@/lib/themes";
+import Image from "next/image";
 
 export default function AdminProfilePage() {
   const { user: clerkUser, isLoaded } = useUser();
@@ -95,6 +97,7 @@ export default function AdminProfilePage() {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, autoSave, isDirty]);
 
   // 画像をリサイズしてBase64に変換
@@ -102,8 +105,7 @@ export default function AdminProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // ファイルサイズチェック（5MB以下）
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > IMAGE_MAX_SIZE_BYTES) {
       toast.error("画像は5MB以下にしてください");
       return;
     }
@@ -113,9 +115,8 @@ export default function AdminProfilePage() {
       reader.onload = (event) => {
         const img = document.createElement("img");
         img.onload = () => {
-          // Canvasでリサイズ
           const canvas = document.createElement("canvas");
-          const maxSize = 400; // 400x400pxにリサイズ
+          const maxSize = IMAGE_RESIZE.avatar;
           let width = img.width;
           let height = img.height;
 
@@ -137,8 +138,7 @@ export default function AdminProfilePage() {
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, width, height);
 
-          // JPEG品質80%で圧縮
-          const base64 = canvas.toDataURL("image/jpeg", 0.8);
+          const base64 = canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
           setFormData({ ...formData, avatarUrl: base64 });
         };
         img.src = event.target?.result as string;
@@ -298,11 +298,13 @@ export default function AdminProfilePage() {
                 <div className="relative">
                   {formData.avatarUrl ? (
                     <div className="relative h-20 w-20 overflow-hidden rounded-full">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={formData.avatarUrl}
                         alt="Avatar preview"
-                        className="h-full w-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="96px"
+                        unoptimized={formData.avatarUrl.startsWith("data:")}
                       />
                       <button
                         type="button"

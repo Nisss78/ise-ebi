@@ -5,8 +5,10 @@ import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { LinkItem, LinkFormData } from "@/types";
+import { LINK_LIMITS, IMAGE_MAX_SIZE_BYTES, IMAGE_RESIZE, IMAGE_QUALITY } from "@/lib/constants";
+import { FormField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -32,37 +34,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-interface LinkItem {
-  _id: Id<"links">;
-  title: string;
-  url: string;
-  order: number;
-  icon?: string;
-  iconUrl?: string;
-  isActive: boolean;
-}
-
-interface LinkFormData {
-  title: string;
-  url: string;
-  icon: string;
-  iconUrl: string;
-  isActive: boolean;
-}
-
 const emptyForm: LinkFormData = {
   title: "",
   url: "",
   icon: "",
   iconUrl: "",
   isActive: true,
-};
-
-// 文字数制限
-const LIMITS = {
-  title: 30,
-  url: 500,
-  icon: 10,
 };
 
 export default function LinksPage() {
@@ -113,13 +90,13 @@ export default function LinksPage() {
     setDialogOpen(true);
   }
 
-  function handleFormChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
     
     // 文字数制限
-    if (name === "title" && value.length > LIMITS.title) return;
-    if (name === "url" && value.length > LIMITS.url) return;
-    if (name === "icon" && value.length > LIMITS.icon) return;
+    if (name === "title" && value.length > LINK_LIMITS.title) return;
+    if (name === "url" && value.length > LINK_LIMITS.url) return;
+    if (name === "icon" && value.length > LINK_LIMITS.icon) return;
     
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
@@ -129,7 +106,7 @@ export default function LinksPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > IMAGE_MAX_SIZE_BYTES) {
       toast.error("画像は5MB以下にしてください");
       return;
     }
@@ -140,7 +117,7 @@ export default function LinksPage() {
         const img = document.createElement("img");
         img.onload = () => {
           const canvas = document.createElement("canvas");
-          const maxSize = 64; // アイコンは小さく
+          const maxSize = IMAGE_RESIZE.icon;
           let width = img.width;
           let height = img.height;
 
@@ -162,7 +139,7 @@ export default function LinksPage() {
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, width, height);
 
-          const base64 = canvas.toDataURL("image/jpeg", 0.8);
+          const base64 = canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
           setFormData((prev) => ({ ...prev, iconUrl: base64 }));
           toast.success("画像をアップロードしました");
         };
@@ -354,56 +331,35 @@ export default function LinksPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="link-title">タイトル</Label>
-                      <span className="text-xs text-muted-foreground">
-                        {formData.title.length}/{LIMITS.title}
-                      </span>
-                    </div>
-                    <Input
-                      id="link-title"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleFormChange}
-                      placeholder="例：公式サイト"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="link-url">URL</Label>
-                      <span className="text-xs text-muted-foreground">
-                        {formData.url.length}/{LIMITS.url}
-                      </span>
-                    </div>
-                    <Input
-                      id="link-url"
-                      name="url"
-                      type="url"
-                      value={formData.url}
-                      onChange={handleFormChange}
-                      placeholder="https://example.com"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="link-icon">絵文字アイコン（任意）</Label>
-                      <span className="text-xs text-muted-foreground">
-                        {formData.icon.length}/{LIMITS.icon}
-                      </span>
-                    </div>
-                    <Input
-                      id="link-icon"
-                      name="icon"
-                      value={formData.icon}
-                      onChange={handleFormChange}
-                      placeholder="例：🔗"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      画像をアップロードした場合は画像が優先されます
-                    </p>
-                  </div>
+                  <FormField
+                    id="link-title"
+                    label="タイトル"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleFormChange}
+                    placeholder="例：公式サイト"
+                    maxLength={LINK_LIMITS.title}
+                  />
+                  <FormField
+                    id="link-url"
+                    label="URL"
+                    name="url"
+                    type="url"
+                    value={formData.url}
+                    onChange={handleFormChange}
+                    placeholder="https://example.com"
+                    maxLength={LINK_LIMITS.url}
+                  />
+                  <FormField
+                    id="link-icon"
+                    label="絵文字アイコン（任意）"
+                    name="icon"
+                    value={formData.icon}
+                    onChange={handleFormChange}
+                    placeholder="例：🔗"
+                    maxLength={LINK_LIMITS.icon}
+                    hint="画像をアップロードした場合は画像が優先されます"
+                  />
                   <div className="flex items-center gap-3">
                     <Switch
                       id="link-active"

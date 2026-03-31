@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   return {
-    title: `${user.name ?? user.username} | Stan Store`,
+    title: `${user.name ?? user.username} | イセエビ`,
     description: user.bio ?? `${user.name ?? user.username}のストアフロント`,
   };
 }

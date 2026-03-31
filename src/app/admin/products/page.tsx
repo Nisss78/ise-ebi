@@ -5,6 +5,9 @@ import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { Product, ProductFormData } from "@/types";
+import { PRODUCT_LIMITS, IMAGE_MAX_SIZE_BYTES, IMAGE_RESIZE, IMAGE_QUALITY } from "@/lib/constants";
+import { FormField } from "@/components/ui/form-field";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   PlusIcon,
   PencilIcon,
@@ -29,26 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-
-interface Product {
-  _id: Id<"products">;
-  title: string;
-  description?: string;
-  price: number;
-  currency: string;
-  thumbnailUrl?: string;
-  fileUrl?: string;
-  isActive: boolean;
-  _creationTime: number;
-}
-
-interface ProductFormData {
-  title: string;
-  description: string;
-  price: string;
-  thumbnailUrl: string;
-  fileUrl: string;
-}
+import Image from "next/image";
 
 const emptyForm: ProductFormData = {
   title: "",
@@ -56,13 +38,6 @@ const emptyForm: ProductFormData = {
   price: "",
   thumbnailUrl: "",
   fileUrl: "",
-};
-
-// 文字数制限
-const LIMITS = {
-  title: 50,
-  description: 200,
-  fileUrl: 500,
 };
 
 function formatPrice(price: number) {
@@ -116,9 +91,9 @@ function ProductFormDialog({
     const { name, value } = e.target;
     
     // 文字数制限を適用
-    if (name === "title" && value.length > LIMITS.title) return;
-    if (name === "description" && value.length > LIMITS.description) return;
-    if (name === "fileUrl" && value.length > LIMITS.fileUrl) return;
+    if (name === "title" && value.length > PRODUCT_LIMITS.title) return;
+    if (name === "description" && value.length > PRODUCT_LIMITS.description) return;
+    if (name === "fileUrl" && value.length > PRODUCT_LIMITS.fileUrl) return;
     
     setForm((prev) => ({ ...prev, [name]: value }));
   }
@@ -128,7 +103,7 @@ function ProductFormDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > IMAGE_MAX_SIZE_BYTES) {
       toast.error("画像は5MB以下にしてください");
       return;
     }
@@ -139,7 +114,7 @@ function ProductFormDialog({
         const img = document.createElement("img");
         img.onload = () => {
           const canvas = document.createElement("canvas");
-          const maxSize = 800;
+          const maxSize = IMAGE_RESIZE.product;
           let width = img.width;
           let height = img.height;
 
@@ -161,7 +136,7 @@ function ProductFormDialog({
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, width, height);
 
-          const base64 = canvas.toDataURL("image/jpeg", 0.8);
+          const base64 = canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
           setForm((prev) => ({ ...prev, thumbnailUrl: base64 }));
           toast.success("画像をアップロードしました");
         };
@@ -241,11 +216,13 @@ function ProductFormDialog({
               <div className="relative">
                 {form.thumbnailUrl ? (
                   <div className="relative h-24 w-32 overflow-hidden rounded-lg">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={form.thumbnailUrl}
                       alt="サムネイルプレビュー"
-                      className="h-full w-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="128px"
+                      unoptimized={form.thumbnailUrl.startsWith("data:")}
                     />
                     <button
                       type="button"
@@ -287,78 +264,55 @@ function ProductFormDialog({
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="prod-title">商品名</Label>
-              <span className="text-xs text-muted-foreground">
-                {form.title.length}/{LIMITS.title}
-              </span>
-            </div>
-            <Input
-              id="prod-title"
-              name="title"
-              value={form.title}
-              onChange={handleChange}
-              placeholder="例：デジタル写真集"
-              required
-              disabled={saving}
-            />
-          </div>
+          <FormField
+            id="prod-title"
+            label="商品名"
+            name="title"
+            value={form.title}
+            onChange={handleChange}
+            placeholder="例：デジタル写真集"
+            required
+            disabled={saving}
+            maxLength={PRODUCT_LIMITS.title}
+          />
 
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="prod-description">説明</Label>
-              <span className="text-xs text-muted-foreground">
-                {form.description.length}/{LIMITS.description}
-              </span>
-            </div>
-            <Textarea
-              id="prod-description"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              placeholder="商品の詳細説明を入力してください"
-              disabled={saving}
-              rows={3}
-            />
-          </div>
+          <FormField
+            id="prod-description"
+            label="説明"
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            placeholder="商品の詳細説明を入力してください"
+            disabled={saving}
+            maxLength={PRODUCT_LIMITS.description}
+            multiline
+            rows={3}
+          />
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="prod-price">価格（円）</Label>
-            <Input
-              id="prod-price"
-              name="price"
-              type="number"
-              min={0}
-              step={1}
-              value={form.price}
-              onChange={handleChange}
-              placeholder="1000"
-              required
-              disabled={saving}
-            />
-          </div>
+          <FormField
+            id="prod-price"
+            label="価格（円）"
+            name="price"
+            type="number"
+            value={form.price}
+            onChange={handleChange}
+            placeholder="1000"
+            required
+            disabled={saving}
+          />
 
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="prod-fileUrl">ファイルURL（任意）</Label>
-              <span className="text-xs text-muted-foreground">
-                {form.fileUrl.length}/{LIMITS.fileUrl}
-              </span>
-            </div>
-            <Input
-              id="prod-fileUrl"
-              name="fileUrl"
-              type="url"
-              value={form.fileUrl}
-              onChange={handleChange}
-              placeholder="https://example.com/file.zip"
-              disabled={saving}
-            />
-            <p className="text-xs text-muted-foreground">
-              ダウンロードファイルのURLを入力（Google Drive、Dropboxなど）
-            </p>
-          </div>
+          <FormField
+            id="prod-fileUrl"
+            label="ファイルURL（任意）"
+            name="fileUrl"
+            type="url"
+            value={form.fileUrl}
+            onChange={handleChange}
+            placeholder="https://example.com/file.zip"
+            disabled={saving}
+            maxLength={PRODUCT_LIMITS.fileUrl}
+            hint="ダウンロードファイルのURLを入力（Google Drive、Dropboxなど）"
+          />
 
           {error && (
             <p className="text-sm text-destructive">{error}</p>
@@ -586,11 +540,13 @@ export default function AdminProductsPage() {
                 {/* Thumbnail - only show if exists */}
                 {product.thumbnailUrl && (
                   <div className="relative aspect-video w-full overflow-hidden bg-muted">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={product.thumbnailUrl}
                       alt={product.title}
-                      className="h-full w-full object-cover"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 300px"
+                      unoptimized={product.thumbnailUrl.startsWith("data:")}
                     />
                     {/* Active badge */}
                     <span

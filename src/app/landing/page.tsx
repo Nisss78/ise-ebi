@@ -48,7 +48,7 @@ export default function LandingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Zap className="h-4 w-4" />
             </div>
-            <span className="font-bold">Stan Store Clone</span>
+            <span className="font-bold">イセエビ</span>
           </div>
           <div className="flex items-center gap-2">
             <Link
@@ -159,7 +159,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>Powered by Stan Store Clone</p>
+          <p>Powered by イセエビ</p>
         </div>
       </footer>
     </div>

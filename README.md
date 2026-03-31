@@ -1,4 +1,4 @@
-# Stan Store Clone
+# イセエビ (Ise Ebi)
 
 日本のクリエイター向けストアフロントプラットフォーム。リンク集 + デジタル商品販売 + 決済を1ページで完結。
 
@@ -31,7 +31,7 @@
 ## ワンクリックデプロイ
 
 ### Vercel + Postgres
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Nisss78/stan-store-clone)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Nisss78/ise-ebi)
 
 1. 上のボタンをクリック
 2. Vercelアカウントでログイン
@@ -44,7 +44,7 @@
 5. 再デプロイ
 
 ### Railway（SQLite対応）
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/stan-store-clone)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ise-ebi)
 
 ```bash
 railway login
@@ -54,7 +54,7 @@ railley up
 ```
 
 ### Render
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Nisss78/stan-store-clone)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Nisss78/ise-ebi)
 
 ### Fly.io
 ```bash
@@ -67,8 +67,8 @@ fly deploy
 ### 1. クローン
 
 ```bash
-git clone https://github.com/Nisss78/stan-store-clone.git
-cd stan-store-clone
+git clone https://github.com/Nisss78/ise-ebi.git
+cd ise-ebi
 npm install
 ```
 

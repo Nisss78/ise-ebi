@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { User, AtSign, Image as ImageIcon, ArrowRight, Loader2 } from "lucide-react";
+import NextImage from "next/image";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -156,10 +157,13 @@ export default function OnboardingPage() {
             {/* Avatar Preview */}
             {avatarUrl && (
               <div className="flex justify-center">
-                <img
+                <NextImage
                   src={avatarUrl}
                   alt="Avatar"
-                  className="h-20 w-20 rounded-full ring-4 ring-white shadow-lg object-cover"
+                  width={80}
+                  height={80}
+                  className="rounded-full ring-4 ring-white shadow-lg object-cover"
+                  sizes="96px"
                 />
               </div>
             )}

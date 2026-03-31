@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "../../../../convex/_generated/api";
+import { Order } from "@/types";
 import {
   Card,
   CardContent,
@@ -19,21 +20,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Eye, Mail, Calendar, Loader2 } from "lucide-react";
 import { useState } from "react";
-
-type Order = {
-  _id: string;
-  buyerEmail: string;
-  buyerName?: string;
-  amount: number;
-  currency: string;
-  status: string;
-  _creationTime: number;
-  product: {
-    id: string;
-    title: string;
-    thumbnailUrl?: string;
-  } | null;
-};
 
 export default function AdminOrdersPage() {
   const { user: clerkUser } = useUser();

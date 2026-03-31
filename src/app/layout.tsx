@@ -17,8 +17,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Stan Store JP",
-  description: "日本のクリエイター向けストアフロント MVP",
+  title: "イセエビ",
+  description: "日本のクリエイター向けストアフロント プラットフォーム",
 };
 
 export default function RootLayout({

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { aiChatSchema } from "@/lib/validations";
+import { checkRateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
+import { withErrorHandler, ValidationError, AuthenticationError } from "@/lib/api-error";
 
 // TODO: To integrate a real LLM API, replace the getMockResponse function below
 // with a call to your preferred provider. Example with OpenAI:
@@ -80,36 +83,36 @@ function getMockResponse(messages: Message[]): string {
   );
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async (request: NextRequest) => {
+  const rateLimitResponse = checkRateLimit(
+    getClientIp(request),
+    "ai-chat",
+    RATE_LIMITS.aiChat
+  );
+  if (rateLimitResponse) return rateLimitResponse;
+
   const { userId } = await auth();
 
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    throw new AuthenticationError();
   }
 
-  try {
-    const body = await request.json();
-    const { messages } = body as { messages: Message[] };
+  const body = await request.json();
+  const parsed = aiChatSchema.safeParse(body);
 
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json(
-        { error: "messages array is required" },
-        { status: 400 }
-      );
-    }
-
-    // Mock response — replace this section with a real LLM API call (see comment at top of file)
-    const reply = getMockResponse(messages);
-
-    return NextResponse.json({
-      role: "assistant",
-      content: reply,
-    });
-  } catch (error) {
-    console.error("AI chat error:", error);
-    return NextResponse.json(
-      { error: "Failed to process request" },
-      { status: 500 }
+  if (!parsed.success) {
+    throw new ValidationError(
+      parsed.error.issues.map((i) => i.message).join(", ")
     );
   }
-}
+
+  const { messages } = parsed.data;
+
+  // Mock response — replace this section with a real LLM API call (see comment at top of file)
+  const reply = getMockResponse(messages);
+
+  return NextResponse.json({
+    role: "assistant",
+    content: reply,
+  });
+});
